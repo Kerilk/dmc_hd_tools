@@ -1,0 +1,66 @@
+LittleEndian();
+
+struct {
+    char numMesh;
+    char unknownNumberB;
+    char unknownNumberC;
+    char unknownNumberD;
+    uint32 padding <format=hex>;
+    uint64 unknowOffset;
+} header;
+
+struct {
+    int16   numBatch;
+    int16   numVertex;
+    uint32  u <format=hex>;
+    uint64  offsetBatches;
+    uint64  flags;
+} meshHeaders[header.numMesh];
+
+local int i;
+local int j;
+for( i = 0; i < header.numMesh; i++ ) {
+    FSeek(meshHeaders[i].offsetBatches);
+    struct {
+        for( j = 0; j < meshHeaders[i].numBatch; j++ ) {
+            struct {
+                int16   numVertex;
+                int16   uB;
+                uint32  padding <format=hex>;
+                uint64  offsetPositions <format=hex>;
+                uint64  offsetNormals <format=hex>;
+                uint64  offsetUVs <format=hex>;
+                uint64  offsetBoneIndexes <format=hex>;
+                uint64  offsetBoneWeights <format=hex>;
+                uint64  offsets[1] <format=hex>;
+                local int64 pos = FTell();
+                FSeek(offsetPositions);
+                struct {
+                    float x;
+                    float y;
+                    float z;
+                } positions[numVertex];
+                FSeek(offsetNormals);
+                struct {
+                    float x;
+                    float y;
+                    float z;
+                } normals[numVertex];
+                FSeek(offsetUVs);
+                struct {
+                    int16 u;
+                    int16 v;
+                } UVs[numVertex];
+                FSeek(offsetBoneIndexes);
+                struct {
+                    ubyte indexes[4];
+                } boneIndexes[numVertex];
+                FSeek(offsetBoneWeights);
+                struct {
+                    uint16 weights <format=hex>;
+                } boneWeights[numVertex];
+                FSeek(pos);
+            } batch;
+        }
+    } mesh;
+}

@@ -1,0 +1,24 @@
+LittleEndian();
+
+struct {
+    int32 numOffset;
+    uint32 offsets[numOffset] <format=hex>;
+} header;
+
+local int i;
+for( i=0; i < header.numOffset; i++ ) {
+
+    FSeek(header.offsets[i]);
+    int32 id <hidden=true>;
+    FSeek(header.offsets[i]);
+    if( id == 1412641280) {
+        struct {
+            char    data[( i < (header.numOffset - 1) ? header.offsets[i+1] : FileSize()) - header.offsets[i]];
+        } texturePack;
+    } else {
+        struct {
+            char    data[( i < (header.numOffset - 1) ? header.offsets[i+1] : FileSize()) - header.offsets[i]];
+        } unknown;
+    }
+
+}

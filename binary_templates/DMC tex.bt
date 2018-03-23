@@ -1,0 +1,31 @@
+LittleEndian();
+
+struct {
+    char    id[4];
+    int32   batchNumber;
+    uint32  firstBatchOffset <format=hex>;
+    uint32  unknownA;
+} texturePack;
+
+struct {
+    int32 batchIdx;
+    uint32 hash <format=hex>;
+    uint32 texNumber;
+    uint32 unknownA[8] <format=hex>;
+    uint32 textureSize <format=hex>;
+    uint32 unknownB[30];
+} textureBatchDescriptor[texturePack.batchNumber];
+
+FSeek(texturePack.firstBatchOffset);
+local int i;
+local int j;
+for( i = 0; i < texturePack.batchNumber; i++ ) {
+    struct {
+        for( j = 0; j < textureBatchDescriptor[i].texNumber; j++ ) {
+            struct {
+                uchar data[textureBatchDescriptor[i].textureSize];
+            } texture;
+        }
+    } textureBatch;
+}
+
