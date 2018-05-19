@@ -1,0 +1,166 @@
+LittleEndian();
+
+typedef int16 utype <read=uRead, write=uWrite>;
+typedef int16 vtype <read=vRead, write=vWrite>;
+
+string uRead(utype f){
+    string s;
+    SPrintf(s, "%f", f/4096.0);
+    return s;
+}
+void uWrite(utype &f, string s){
+    local hfloat ff = Atof(s);
+    f = (utype)(ff*4096);
+}
+
+string vRead(vtype f){
+    string s;
+    SPrintf(s, "%f", 1 - (f/4096.0));
+    return s;
+}
+void vWrite(vtype &f, string s){
+    local double ff = Atof(s);
+    f = (vtype)((1 - ff) * 4096);
+}
+
+struct {
+    char headerId[4];
+    float version;
+    uint64 padding;
+    char numMeshes;
+    char numBones;
+    char numTex;
+    char ukn;
+    uint32 ukn;
+    uint64 ukn2;
+    uint32 bone_structOffset <format=hex>;
+    char padding2[28];
+} Header;
+
+struct {
+        ubyte num_subMeshes;
+        ubyte ukn;
+        uint16 numVerts;
+        uint32 padding;
+        uint64 meshOffset <format=hex>;
+        char flags[4];          //lighting something
+        char padding2[28];
+        float ukn;
+        float ukn;
+        float ukn;
+        float ukn;
+} meshHeader[Header.numMeshes];
+
+local int ind = 0;
+local int i;
+local int j;
+local int k;
+for( i = 0; i < Header.numMeshes; i++){
+    FSeek(meshHeader[i].meshOffset);
+    struct{
+        for( j = 0; j < meshHeader[i].num_subMeshes; j++){
+            ind+=1;
+            struct{
+                local uint64 pos <format=hex>;
+                struct{
+                    uint16 numVerts;
+                    uint16 texInd;
+                    char padding[12];
+                    uint64 VertsOffset <format=hex>;
+                    uint64 NormalsOffset <format=hex>;
+                    uint64 UVsOffset <format=hex>;
+                    if (Header.headerId == "MOD " || Header.headerId ==  "EFM "){
+                        uint64 WeightsOffset <format=hex>;
+                        uint64 uknOffset <format=hex>;
+                        struct{char padding[8];}padding;}
+                    else if (Header.headerId == "SCM "){
+                        struct{char p[16];}padding;
+                        uint64 uknOffset_a <format=hex>;}
+                    else{struct{char p[24];}padding;}
+                    uint64 ukn <format=hex>;
+                    uint64 padding2;
+                    pos = FTell();
+                }header;
+                    
+                FSeek(header.VertsOffset);
+                struct{
+                    float x;
+                    float y;
+                    float z;
+                } Vertices[header.numVerts];
+
+                FSeek(header.NormalsOffset);
+                struct{
+                    float x;
+                    float y;
+                    float z;
+                } Normals[header.numVerts];
+                
+                FSeek(header.UVsOffset);
+                struct{
+                    utype U;
+                    vtype V;
+                } UVs[header.numVerts];
+                if (Header.headerId == "MOD " || Header.headerId ==  "EFM "){
+                    FSeek(header.WeightsOffset);
+                    struct{
+                        uint32 weights;
+                    } Weights[header.numVerts];
+                    FSeek(header.uknOffset);
+                    struct{
+                        uint16 ukn;
+                    } ukn[header.numVerts];
+				}
+                FSeek(pos);
+            } subMesh;
+        }     
+    } mesh;
+}
+
+local int mO[Header.numMeshes] <format=hex>;
+local int vO[ind] <format=hex>; 
+local int nO[ind] <format=hex>; 
+local int uvO[ind] <format=hex>; 
+local int wO[ind] <format=hex>;
+local int uknO[ind] <format=hex>;
+
+for( i = 0; i < Header.numMeshes; i++){
+    mO[i]   = meshHeader[i].meshOffset;
+    for( j = 0; j < meshHeader[i].num_subMeshes; j++){
+        vO[i]   = mesh[i].subMesh[j].header.VertsOffset;
+        nO[i]   = mesh[i].subMesh[j].header.NormalsOffset;
+        uvO[i]  = mesh[i].subMesh[j].header.UVsOffset;
+        if (Header.headerId == "MOD "){
+            wO[i]   = mesh[i].subMesh[j].header.WeightsOffset;
+            uknO[i] = mesh[i].subMesh[j].header.uknOffset;
+        }
+    }
+}
+
+FSeek(Header.bone_structOffset);
+struct {
+    uint32 maybe_hierarchyOfs <format=hex>;
+    uint32 maybe_hOfs2 <format=hex>;
+    uint32 or_maybe_this <format=hex>;
+    uint32 BonesOffset <format=hex>;
+    uint32 not_a_boneCount;         //0 on coats, maybe counts bones not for physics
+    char ukn[12];
+    FSeek(Header.bone_structOffset + maybe_hierarchyOfs);
+    byte smth[Header.numBones];
+    FSeek(Header.bone_structOffset + maybe_hOfs2);
+    byte smth1[Header.numBones];
+    FSeek(Header.bone_structOffset + or_maybe_this);
+    byte smth2[Header.numBones];
+    FSeek(Header.bone_structOffset + BonesOffset);
+    struct{
+        float x;
+        float y;
+        float z;
+        float w;
+        char padding[16];
+    }bones[Header.numBones];
+}Bones;
+
+struct{
+    byte wtf[FileSize()-FTell()];
+}WTF;
