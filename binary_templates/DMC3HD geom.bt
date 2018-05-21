@@ -139,24 +139,24 @@ for( i = 0; i < Header.numMeshes; i++){
 
 FSeek(Header.bone_structOffset);
 struct {
-    uint32 maybe_hierarchyOfs <format=hex>;
-    uint32 maybe_hOfs2 <format=hex>;
+    uint32 hierarchyOfs <format=hex>;
+    uint32 namesOfs <format=hex>;
     uint32 or_maybe_this <format=hex>;
     uint32 BonesOffset <format=hex>;
     uint32 not_a_boneCount;         //0 on coats, maybe counts bones not for physics
     char ukn[12];
-    FSeek(Header.bone_structOffset + maybe_hierarchyOfs);
-    byte smth[Header.numBones];
-    FSeek(Header.bone_structOffset + maybe_hOfs2);
-    byte smth1[Header.numBones];
+    FSeek(Header.bone_structOffset + hierarchyOfs);
+    byte hierarchy[Header.numBones];
+    FSeek(Header.bone_structOffset + namesOfs);
+    byte names[Header.numBones];
     FSeek(Header.bone_structOffset + or_maybe_this);
     byte smth2[Header.numBones];
     FSeek(Header.bone_structOffset + BonesOffset);
-    struct{
+    struct{ // as translation from parent
         float x;
         float y;
         float z;
-        float w;
+        float length; // sqrt(x*x + y*y + z*z)
         char padding[16];
     }bones[Header.numBones];
 }Bones;
