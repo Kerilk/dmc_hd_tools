@@ -63,10 +63,16 @@ class Batch:
 		for i in range(self.numVertices):
 			w = bs.readUShort()
 			triangleSkip.append( (w >> 15) & 1 )
-			boneWeights.append( ((w >> 10) & 0x1f) / 31.0 )
-			boneWeights.append( ((w >>  5) & 0x1f) / 31.0 )
-			boneWeights.append( ((w >>  0) & 0x1f) / 31.0 )
-		self.boneWeights = struct.pack("<"+str(len(boneWeights))+"f",*bI)
+			w0 = ((w >> 10) & 0x1f) << 3
+			w1 = ((w >>  5) & 0x1f) << 3
+			w2 = ((w >>  0) & 0x1f) << 3
+			sumw = w0 + w1 + w2
+			if sumw != 0xf8:
+				print(str(i)+": "+str(sumw))
+			boneWeights.append( w0 )
+			boneWeights.append( w1 )
+			boneWeights.append( w2 )
+		self.boneWeights = struct.pack("<"+str(len(boneWeights))+"B",*bI)
 
 		triangles = []
 		v1 = 0
@@ -240,7 +246,7 @@ def modLoadModel(data, mdlList):
 			rapi.rpgBindNormalBuffer(b.normals, noesis.RPGEODATA_FLOAT, 12)
 			rapi.rpgBindUV1Buffer(b.uvs, noesis.RPGEODATA_FLOAT, 8)
 			rapi.rpgBindBoneIndexBuffer(b.boneIndexes, noesis.RPGEODATA_UBYTE, 3, 3)
-			rapi.rpgBindBoneWeightBuffer(b.boneWeights, noesis.RPGEODATA_FLOAT, 12, 3)
+			rapi.rpgBindBoneWeightBuffer(b.boneWeights, noesis.RPGEODATA_UBYTE, 3, 3)
 			rapi.rpgCommitTriangles(b.triangles, noesis.RPGEODATA_USHORT, b.trianglesIndexCount, noesis.RPGEO_TRIANGLE, 1)
 			rapi.rpgClearBufferBinds()
 			j = j + 1
